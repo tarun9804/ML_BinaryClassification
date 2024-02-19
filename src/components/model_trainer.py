@@ -1,6 +1,10 @@
+import os.path
+
 from src.logger import logging
 from src.components.data_ingestion import DataIngestion
 import pandas as pd
+import joblib
+
 # models
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
@@ -18,6 +22,7 @@ from sklearn.model_selection import cross_val_score
 
 class ModelTrainer:
     def __init__(self):
+        self.obj_path=os.path.join("artefact","best_model.pkl")
         self.models = {
             "LogisticRegression": LogisticRegression(),
             "RandomForestClassifier": RandomForestClassifier(),
@@ -30,7 +35,7 @@ class ModelTrainer:
         self.params = {
             "LogisticRegression": {},
             "RandomForestClassifier": {'n_estimators': [8, 16, 32, 64, 128, 256]},
-            "AdaBoostClassifier": {'learning_rate': [.1, .01, .05, .001]},
+            "AdaBoostClassifier": {'learning_rate': [.1, .01, .05]},
             "GradientBoostingClassifier": {  # 'loss':['squared_error', 'huber', 'absolute_error', 'quantile'],
                 'learning_rate': [.1, .01, .05, .001],
                 'subsample': [0.6, 0.7, 0.75, 0.8, 0.85, 0.9],
@@ -85,6 +90,10 @@ class ModelTrainer:
             res.loc[j, "tn-test"], res.loc[j, "fp-test"], res.loc[j, "fn-test"], res.loc[j, "tp-test"] = cm.flatten()
             j = j + 1
         print(res)
+        res = res.sort_values(by="test_roc_auc_score", ascending=False)
+        best_model = res["model"][0]
+        with open(self.obj_path, "wb") as f:
+            joblib.dump(self.models[best_model],f)
 
 
 if __name__ == "__main__":
